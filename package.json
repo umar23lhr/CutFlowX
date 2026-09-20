@@ -1,0 +1,16 @@
+{
+  "name": "cutflowx-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CutFlowX — Smart Silence Cutter for Premiere Pro. Detection core (platform-independent).",
+  "author": "M Umar Saeed",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

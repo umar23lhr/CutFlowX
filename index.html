@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CutFlowX</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Two static lights behind the glass: blue = action, amber = silence. -->
+  <div class="backdrop" aria-hidden="true"><span class="light light-action"></span><span class="light light-silence"></span></div>
+
+  <header class="brand">
+    <img class="brand-logo" src="img/logo.png" width="34" height="34" alt="" />
+    <div class="brand-text">
+      <h1>CutFlowX</h1>
+      <p class="tagline">Smart Silence Cutter</p>
+    </div>
+    <button id="refresh" class="icon-button" title="Read the active sequence again" aria-label="Refresh">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M12 1.5v3h-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <ol class="steps" id="steps" aria-label="Progress">
+    <li data-step="1" class="current">Analyze</li>
+    <li data-step="2">Review</li>
+    <li data-step="3">Cut</li>
+  </ol>
+
+  <main>
+    <section class="card sequence" aria-live="polite">
+      <div id="seq-empty" class="empty" hidden>
+        <img class="empty-logo" src="img/logo.png" width="56" height="56" alt="" />
+        <p class="empty-title" id="seq-empty-title">No sequence detected.</p>
+        <p class="empty-body" id="seq-empty-body">Open a sequence in the Timeline, then click refresh.</p>
+      </div>
+
+      <div id="seq-body" hidden>
+        <h2 id="seq-name" class="seq-name"></h2>
+        <div class="strip" role="img" id="strip" aria-label="Sequence range">
+          <div class="strip-range" id="strip-range"></div>
+        </div>
+        <div class="scale"><span id="strip-start"></span><span id="strip-end"></span></div>
+
+        <dl class="facts">
+          <div><dt>Frame rate</dt><dd id="f-fps"></dd></div>
+          <div><dt>Frame size</dt><dd id="f-size"></dd></div>
+          <div class="wide"><dt>Duration</dt><dd id="f-duration"></dd></div>
+          <div class="wide"><dt>Analysis range</dt><dd id="f-range"></dd></div>
+        </dl>
+
+        <details class="tracks-box">
+          <summary id="tracks-summary">Audio tracks</summary>
+          <ul class="tracks" id="tracks"></ul>
+          <p class="hint">Mute music and effects tracks so only the voice is analyzed.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="card settings" id="settings">
+      <div class="card-head">
+        <h3>Detection</h3>
+        <button id="reset-settings" class="text-button" type="button">Reset to defaults</button>
+      </div>
+      <div class="setting">
+        <label for="s-threshold">Threshold</label><output id="o-threshold"></output>
+        <input type="range" id="s-threshold" min="-60" max="-10" step="1" />
+        <p class="setting-help">Audio quieter than this counts as silence. Lower it if quiet words get cut.</p>
+      </div>
+      <div class="setting">
+        <label for="s-min">Remove silence longer than</label><output id="o-min"></output>
+        <input type="range" id="s-min" min="100" max="3000" step="50" />
+      </div>
+      <div class="setting">
+        <label for="s-before">Keep before each cut</label><output id="o-before"></output>
+        <input type="range" id="s-before" min="0" max="500" step="10" />
+      </div>
+      <div class="setting">
+        <label for="s-after">Keep after each cut</label><output id="o-after"></output>
+        <input type="range" id="s-after" min="0" max="500" step="10" />
+      </div>
+    </section>
+
+    <section class="results" id="results" hidden>
+      <p id="stale" class="stale" hidden>The sequence or its In/Out range changed. Analyze again to update.</p>
+
+      <div class="card wave-card">
+        <div class="summary">
+          <p class="count" id="r-count"></p>
+          <p class="removal" id="r-removal"></p>
+        </div>
+        <div class="wave-well">
+          <canvas id="wave" class="wave" height="72" role="img" aria-label="Waveform with planned cuts"></canvas>
+        </div>
+        <div class="scale"><span id="w-start"></span><span id="w-end"></span></div>
+        <p class="legend"><span class="swatch"></span>Planned cut. Click one below to hear it: the playhead jumps 1 s before it.</p>
+      </div>
+
+      <div class="card list-card">
+        <ol class="regions" id="regions"></ol>
+      </div>
+
+      <div class="card cutting" id="cutting">
+        <div class="card-head"><h3>Cut</h3></div>
+        <p class="cut-help" id="test-help">Cuts the silences above and checks every track after each cut.</p>
+        <button id="test-cut" class="ghost" type="button">Test one cut first</button>
+        <div id="test-report" class="report" hidden>
+          <p class="report-title" id="report-title"></p>
+          <ul class="report-tracks" id="report-tracks"></ul>
+          <p class="report-next" id="report-next"></p>
+        </div>
+      </div>
+
+      <details class="card diag">
+        <summary>Diagnostics</summary>
+        <pre id="diag-text"></pre>
+        <button id="copy-diag" class="text-button" type="button">Copy diagnostics</button>
+      </details>
+    </section>
+
+    <details class="card checks" id="checks">
+      <summary id="checks-summary">System</summary>
+      <ul>
+        <li id="c-premiere"><span class="dot"></span><span class="c-label">Premiere connection</span><span class="c-value">Checking…</span></li>
+        <li id="c-node"><span class="dot"></span><span class="c-label">Node.js</span><span class="c-value">Checking…</span></li>
+        <li id="c-engine"><span class="dot"></span><span class="c-label">Detection engine</span><span class="c-value">Checking…</span></li>
+      </ul>
+      <p id="error-detail" class="error-detail" hidden></p>
+    </details>
+
+    <p class="credit">CutFlowX by M Umar Saeed</p>
+  </main>
+
+  <!-- Always-visible actions: no scrolling to reach Analyze or Cut. -->
+  <footer class="action-bar">
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <div class="actions">
+      <button id="analyze" class="primary" type="button">Analyze</button>
+      <button id="cut-all" class="cut" type="button" hidden>Cut silences</button>
+    </div>
+  </footer>
+
+  <script src="js/CSInterface.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/waveform.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
